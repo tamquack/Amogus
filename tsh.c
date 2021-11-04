@@ -169,7 +169,36 @@ void eval(char *cmdline)
     int bg; 
     pid_t pid; 
     sigset_t mask; 
-    bg = parseline(cmdline, argv); 
+     
+
+    char temp[MAXLINE];
+    strcpy(temp, cmdline); 
+    bg = parseline(temp, argv);
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD); 
+    sigaddset(&mask, SIGINT); 
+    sigaddset(&mask, SIGTSTP); 
+    if(!builtin_cmd(argv)){
+        sigprocmask(SIG_BLOCK, &mask, NULL); 
+        if((pid = fork()) == 0){
+            setpgid(0,0); 
+            sigprocmask(SIG_UNBLOCK, &mask, NULL); 
+            if(execve(argv[0], argv, environ) < 0){
+                printf("%s: Command not found. \n", argv[0]); 
+                exit(0); 
+            }
+        }
+        if(!bg){
+            addjob(jobs, pid, FG, cmdline); 
+            sigprocmask(SIG_UNBLOCK, &mask, NULL); 
+            waitfg(pid); 
+        }else {   
+            addjob(jobs, pid, BG, cmdline);              
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);              
+            printf("[%d] (%d) %s", pid2jid(pid), (int)pid, cmdline);    
+        }
+    }
     return;
 }
 
@@ -260,7 +289,6 @@ int builtin_cmd(char **argv)
 void do_bgfg(char **argv) 
 {
     struct job_t *gj;
-    int id; 
     if (argv[1] == NULL) {                                   
         printf("%s command requires PID or %%jobid argument\n", argv[0]);
         return;
@@ -279,14 +307,14 @@ void do_bgfg(char **argv)
     else{
         pid_t pid = atoi(argv[1]); 
         gj = getjobpid(jobs, pid);
-        if(gj = NULL){
+        if(gj == NULL){
             printf("(%d): No such process\n", atoi(argv[1])); 
             return; 
        } 
     }
 
     if(kill(-gj->pid, SIGCONT) < 0){
-        unix_error("kill error"); 
+        unix_error("kill error");
     }
 
     if(!strcmp(argv[0], "bg")){
