@@ -191,15 +191,18 @@ if (argv[0] == NULL) {
                 exit(0); //exit
             }
         }
-        if(!bg){ // if not background (therefore foreground)
-            addjob(jobs, pid, FG, cmdline); //add process to foreground jobs
-            sigprocmask(SIG_UNBLOCK, &mask, NULL); //unblock signal set
-            waitfg(pid); // wait for process to terminate
-                 
-        }else {   
-            addjob(jobs, pid, BG, cmdline);     //add process to background jobs         
-            sigprocmask(SIG_UNBLOCK, &mask, NULL);              
-            printf("[%d] (%d) %s", pid2jid(pid), (int)pid, cmdline);  
+        if(!bg){ // if foreground
+            addjob(jobs, pid, FG, cmdline); //add to foreground jobs
+            }
+        else{ // if background
+            addjob(jobs, pid, BG, cmdline); //add to background jobs
+            }     
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);   // unblock signal set           
+        if(!bg){ //if foreground
+            waitfg(pid); //wait for foreground process to terminate
+        }
+        else{ // if background
+            printf("[%d] (%d) %s", pid2jid(pid), (int)pid, cmdline);  // printf background process info
         }
     }
     return;
