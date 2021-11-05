@@ -165,17 +165,12 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
-    char *argv[MAXARGS];
-    int bg; 
-    pid_t pid; 
-    sigset_t mask; 
-    
-    char temp[MAXLINE];
-    strcpy(temp, cmdline); 
-    bg = parseline(cmdline, argv);
-if (argv[0] == NULL) {
-        return;             
-    }
+    char *argv[MAXARGS]; //execve args
+    int bg; // 1 = background, 0 = foreground
+    pid_t pid; //process id
+    sigset_t mask; //signal sets to be blocked
+	
+    bg = parseline(cmdline, argv); //build argv array from cmdline, bg or fg 
     sigemptyset(&mask); // initialize signal set
     sigaddset(&mask, SIGINT); //add sigint to set
     sigaddset(&mask, SIGTSTP); // add sigtstp to set
