@@ -169,34 +169,37 @@ void eval(char *cmdline)
     int bg; 
     pid_t pid; 
     sigset_t mask; 
-     
-
+    
     char temp[MAXLINE];
     strcpy(temp, cmdline); 
-    bg = parseline(temp, argv);
-
+    bg = parseline(cmdline, argv);
+if (argv[0] == NULL) {
+        return;             
+    }
     sigemptyset(&mask);
-    sigaddset(&mask, SIGCHLD); 
     sigaddset(&mask, SIGINT); 
     sigaddset(&mask, SIGTSTP); 
+     sigaddset(&mask, SIGCHLD); 
     if(!builtin_cmd(argv)){
         sigprocmask(SIG_BLOCK, &mask, NULL); 
+
         if((pid = fork()) == 0){
-            setpgid(0,0); 
             sigprocmask(SIG_UNBLOCK, &mask, NULL); 
+            setpgid(0,0); 
             if(execve(argv[0], argv, environ) < 0){
-                printf("%s: Command not found. \n", argv[0]); 
+                printf("%s: Command not found. \n", argv[1]); 
                 exit(0); 
             }
         }
         if(!bg){
             addjob(jobs, pid, FG, cmdline); 
-            sigprocmask(SIG_UNBLOCK, &mask, NULL); 
-            waitfg(pid); 
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            waitfg(pid);
+                 
         }else {   
             addjob(jobs, pid, BG, cmdline);              
             sigprocmask(SIG_UNBLOCK, &mask, NULL);              
-            printf("[%d] (%d) %s", pid2jid(pid), (int)pid, cmdline);    
+            printf("[%d] (%d) %s", pid2jid(pid), (int)pid, cmdline);  
         }
     }
     return;
@@ -334,11 +337,11 @@ void waitfg(pid_t pid)
 {
     int x = 0; 
     while (x == 0){
-      if (pid == fgpid(jobs)) {
-          sleep(1);
-      }  
+      if (pid != fgpid(jobs)) {
+          x = 1;
+      } 
       else{
-          x = 1; 
+          sleep(1); 
       }
     }
     return;
@@ -365,17 +368,18 @@ void sigchld_handler(int sig)
         struct job_t *getJ = getjobpid(jobs, pid);
         if(!getJ){return;}
     
-    if(WIFSTOPPED(status)){
-        getJ->state = ST; 
-        printf("Job [%d] (%d) stopped by signal %d\n", jid, (int) pid, WSTOPSIG(status));
-
-    }
+    
     if(WIFSIGNALED(status)){
         deletejob(jobs, pid); 
         printf("Job [%d] (%d) terminated by signal %d\n", jid, (int) pid, WTERMSIG(status));
     }
-    if(WIFEXITED(status)){
+    else if(WIFEXITED(status)){
         deletejob(jobs, pid); 
+    }
+    else if(WIFSTOPPED(status)){
+        getJ->state = ST; 
+        printf("Job [%d] (%d) stopped by signal %d\n", jid, (int) pid, WSTOPSIG(status));
+
     }
 }
     return;
@@ -579,7 +583,7 @@ void listjobs(struct job_t *jobs)
 /*
  * usage - print a help message
  */
-void usage(void) 
+void usage(void)
 {
     printf("Usage: shell [-hvp]\n");
     printf("   -h   print this message\n");
