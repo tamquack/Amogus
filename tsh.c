@@ -176,28 +176,28 @@ void eval(char *cmdline)
 if (argv[0] == NULL) {
         return;             
     }
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGINT); 
-    sigaddset(&mask, SIGTSTP); 
-     sigaddset(&mask, SIGCHLD); 
-    if(!builtin_cmd(argv)){
-        sigprocmask(SIG_BLOCK, &mask, NULL); 
+    sigemptyset(&mask); // initialize signal set
+    sigaddset(&mask, SIGINT); //add sigint to set
+    sigaddset(&mask, SIGTSTP); // add sigtstp to set
+     sigaddset(&mask, SIGCHLD); //add sigchild to set
+    if(!builtin_cmd(argv)){ // if not built-in command
+        sigprocmask(SIG_BLOCK, &mask, NULL); //block signals set
 
-        if((pid = fork()) == 0){
-            sigprocmask(SIG_UNBLOCK, &mask, NULL); 
-            setpgid(0,0); 
-            if(execve(argv[0], argv, environ) < 0){
-                printf("%s: Command not found. \n", argv[0]); 
-                exit(0); 
+        if((pid = fork()) == 0){ // child process path
+            sigprocmask(SIG_UNBLOCK, &mask, NULL); // unblock child signal set
+            setpgid(0,0); // give child a new process group
+            if(execve(argv[0], argv, environ) < 0){ // if execution fails,
+                printf("%s: Command not found. \n", argv[0]); // print out command not found
+                exit(0); //exit
             }
         }
-        if(!bg){
-            addjob(jobs, pid, FG, cmdline); 
-            sigprocmask(SIG_UNBLOCK, &mask, NULL);
-            waitfg(pid);
+        if(!bg){ // if not background (therefore foreground)
+            addjob(jobs, pid, FG, cmdline); //add process to foreground jobs
+            sigprocmask(SIG_UNBLOCK, &mask, NULL); //unblock signal set
+            waitfg(pid); // wait for process to terminate
                  
         }else {   
-            addjob(jobs, pid, BG, cmdline);              
+            addjob(jobs, pid, BG, cmdline);     //add process to background jobs         
             sigprocmask(SIG_UNBLOCK, &mask, NULL);              
             printf("[%d] (%d) %s", pid2jid(pid), (int)pid, cmdline);  
         }
