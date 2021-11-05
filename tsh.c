@@ -1,7 +1,7 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and login ID here>
+ * Justin Lam (32440319) and Tamson Quang (32964084)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -629,6 +629,3 @@ void sigquit_handler(int sig)
     printf("Terminating after receipt of SIGQUIT signal\n");
     exit(1);
 }
-
-
-
