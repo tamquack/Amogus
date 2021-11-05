@@ -354,25 +354,25 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-    int jid;  
-    int status;
-    pid_t pid; 
-    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0){
-        jid = pid2jid(pid);
-        struct job_t *getJ = getjobpid(jobs, pid);
-        if(!getJ){return;}
+    int jid;  // jid
+    int status; // status
+    pid_t pid; // pid
+    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0){ //waiting for non-hung, non-terminated child
+        jid = pid2jid(pid); //jid of child
+        struct job_t *getJ = getjobpid(jobs, pid); 
+        if(!getJ){return;} //if no job pid, return
     
     
-    if(WIFSIGNALED(status)){
-        deletejob(jobs, pid); 
-        printf("Job [%d] (%d) terminated by signal %d\n", jid, (int) pid, WTERMSIG(status));
+    if(WIFSIGNALED(status)){ //if signal
+        deletejob(jobs, pid); //delete job
+        printf("Job [%d] (%d) terminated by signal %d\n", jid, (int) pid, WTERMSIG(status)); //print delete message
     }
-    else if(WIFEXITED(status)){
-        deletejob(jobs, pid); 
+    else if(WIFEXITED(status)){ //if exit
+        deletejob(jobs, pid); //also delete job
     }
-    else if(WIFSTOPPED(status)){
-        getJ->state = ST; 
-        printf("Job [%d] (%d) stopped by signal %d\n", jid, (int) pid, WSTOPSIG(status));
+    else if(WIFSTOPPED(status)){ //if stopped
+        getJ->state = ST; //set job state to ST (stopped)
+        printf("Job [%d] (%d) stopped by signal %d\n", jid, (int) pid, WSTOPSIG(status)); //print stop message
 
     }
 }
@@ -386,9 +386,9 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-    pid_t pid = fgpid(jobs); 
-    if (pid > 0) {
-        if (kill(-pid, sig) < 0){
+    pid_t pid = fgpid(jobs); //pid of foreground job
+    if (pid > 0) { //if foreground pid exists
+        if (kill(-pid, sig) < 0){ // kill processes in whole group with signal (SIGINT signal)
             unix_error("kill error");
         }
     }
@@ -402,9 +402,9 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-    pid_t pid = fgpid(jobs); 
-    if(pid > 0){
-        if(kill(-pid, sig) < 0){
+    pid_t pid = fgpid(jobs); //pid of foreground job
+    if(pid > 0){ //if foreground pid exists
+        if(kill(-pid, sig) < 0){ //stop processes in whole group with signal (SIGTSTP signal)
             unix_error("kill error"); 
         }
     }
