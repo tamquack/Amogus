@@ -325,7 +325,7 @@ void do_bgfg(char **argv)
         printf("[%d] (%d) %s", gj->jid, gj->pid, gj->cmdline);
     } else{
         gj->state = FG; 
-
+	waitfg(gj->pid);
     }
     return;
 }
